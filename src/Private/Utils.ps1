@@ -437,8 +437,8 @@ function Invoke-SQLiteQuery {
         $isUnix = $PSVersionTable.PSVersion.Major -ge 6 -and ($IsMacOS -or $IsLinux)
         
         if ($isUnix) {
-            # Use cp command which can copy locked files on Unix systems
-            $copyResult = & cp "$DatabasePath" "$tempDb" 2>&1
+            # Use /bin/cp command which can copy locked files on Unix systems
+            $copyResult = & /bin/cp "$DatabasePath" "$tempDb" 2>&1
             if ($LASTEXITCODE -ne 0) {
                 throw "Failed to copy database: $copyResult"
             }
