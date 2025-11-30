@@ -23,7 +23,7 @@ Runs fully locally — no data leaves the device.
 
 ## 🚀 Installation
 
-### Install from PowerShell Gallery (when published)
+### Install from PowerShell Gallery
 
 ```powershell
 Install-Module -Name PeachSecurity.AIUsageDiscovery
