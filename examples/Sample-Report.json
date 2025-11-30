@@ -1,0 +1,16 @@
+{
+  "machine": "WIN-CLIENT",
+  "browsers": [
+    {
+      "name": "Chrome",
+      "findings": [
+        {
+          "url": "https://chat.openai.com/",
+          "tool": "ChatGPT",
+          "category": "Generative AI",
+          "timestamp": "2024-01-01T12:00:00Z"
+        }
+      ]
+    }
+  ]
+}
