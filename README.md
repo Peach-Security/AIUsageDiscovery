@@ -172,4 +172,4 @@ This module is part of Free Tools Friday, a weekly release series for MSPs.
 
 ## 📄 License
 
-MIT (or choose your preferred license and update LICENSE accordingly).
+MIT License - see [LICENSE](LICENSE) for details.
