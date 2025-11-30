@@ -248,7 +248,7 @@ This module is part of **Free Tools Friday**, a weekly release series for MSPs b
 <p align="center">
   <a href="https://github.com/Peach-Security/free-tools-friday">📦 Full Tool Catalog</a> •
   <a href="https://peachsecurity.io">🍑 Learn More</a> •
-  <a href="https://peachsecurity.io/waitlist">📋 Join the Waitlist</a>
+  <a href="https://www.peachsecurity.io/#waitlist">📋 Join the Waitlist</a>
 </p>
 
 ---
