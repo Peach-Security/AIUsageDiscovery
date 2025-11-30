@@ -1,5 +1,150 @@
 # Utils.ps1 - Utility functions for AI Usage Discovery
 
+function Install-SQLiteCLI {
+    <#
+    .SYNOPSIS
+    Downloads and installs SQLite CLI tools on Windows.
+
+    .DESCRIPTION
+    Automatically downloads the official SQLite CLI tools from sqlite.org
+    and installs them to a user-accessible location. This eliminates the
+    need for manual SQLite installation on Windows.
+
+    .PARAMETER Force
+    Re-download and reinstall even if SQLite is already installed.
+
+    .OUTPUTS
+    Returns the path to sqlite3.exe if successful, or $null if failed.
+
+    .EXAMPLE
+    $sqlitePath = Install-SQLiteCLI
+    if ($sqlitePath) { Write-Host "SQLite installed at: $sqlitePath" }
+    #>
+    [CmdletBinding()]
+    param(
+        [switch] $Force
+    )
+
+    # Only supported on Windows
+    $isWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
+    if (-not $isWindows) {
+        Write-Warning "Automatic SQLite installation is only supported on Windows."
+        Write-Warning "Please install SQLite manually:"
+        Write-Warning "  macOS: brew install sqlite"
+        Write-Warning "  Linux: sudo apt install sqlite3"
+        return $null
+    }
+
+    # Define installation path
+    $installDir = Join-Path $env:LOCALAPPDATA 'Programs\sqlite3'
+    $sqlite3Exe = Join-Path $installDir 'sqlite3.exe'
+
+    # Check if already installed
+    if ((Test-Path $sqlite3Exe) -and -not $Force) {
+        Write-Verbose "SQLite CLI already installed at: $sqlite3Exe"
+        return $sqlite3Exe
+    }
+
+    Write-Host "  Installing SQLite CLI tools..." -ForegroundColor Cyan
+
+    try {
+        # Create install directory
+        if (-not (Test-Path $installDir)) {
+            New-Item -Path $installDir -ItemType Directory -Force | Out-Null
+            Write-Verbose "Created directory: $installDir"
+        }
+
+        # SQLite download URL - using the precompiled tools for Windows x64
+        # The version number changes, so we need to fetch the download page to get the current version
+        $downloadPageUrl = 'https://sqlite.org/download.html'
+        
+        Write-Verbose "Fetching SQLite download page to find current version..."
+        
+        # Fetch the download page to find the current tools filename
+        $webResponse = Invoke-WebRequest -Uri $downloadPageUrl -UseBasicParsing -TimeoutSec 30
+        
+        # Parse for the sqlite-tools-win-x64 filename (e.g., sqlite-tools-win-x64-3470000.zip)
+        $pattern = 'sqlite-tools-win-x64-\d+\.zip'
+        $matches = [regex]::Matches($webResponse.Content, $pattern)
+        
+        if ($matches.Count -eq 0) {
+            # Fallback: try win32 version if x64 not found
+            $pattern = 'sqlite-tools-win32-x86-\d+\.zip'
+            $matches = [regex]::Matches($webResponse.Content, $pattern)
+        }
+
+        if ($matches.Count -eq 0) {
+            throw "Could not find SQLite tools download link on the official page."
+        }
+
+        $zipFileName = $matches[0].Value
+        $downloadUrl = "https://sqlite.org/$(([datetime]::Now).Year)/$zipFileName"
+        
+        Write-Verbose "Download URL: $downloadUrl"
+        Write-Host "    Downloading: $zipFileName" -ForegroundColor DarkGray
+
+        # Download to temp location
+        $tempZip = Join-Path ([System.IO.Path]::GetTempPath()) $zipFileName
+        
+        # Use appropriate download method
+        if ($PSVersionTable.PSVersion.Major -ge 6) {
+            Invoke-WebRequest -Uri $downloadUrl -OutFile $tempZip -UseBasicParsing -TimeoutSec 120
+        }
+        else {
+            # PowerShell 5.1 - use .NET WebClient for better performance
+            $webClient = New-Object System.Net.WebClient
+            $webClient.DownloadFile($downloadUrl, $tempZip)
+        }
+
+        if (-not (Test-Path $tempZip)) {
+            throw "Download failed - file not found at: $tempZip"
+        }
+
+        Write-Host "    Extracting..." -ForegroundColor DarkGray
+
+        # Extract the ZIP
+        if ($PSVersionTable.PSVersion.Major -ge 5) {
+            Expand-Archive -Path $tempZip -DestinationPath $installDir -Force
+        }
+        else {
+            # Fallback for older PowerShell
+            Add-Type -AssemblyName System.IO.Compression.FileSystem
+            [System.IO.Compression.ZipFile]::ExtractToDirectory($tempZip, $installDir)
+        }
+
+        # The ZIP extracts to a subfolder, move files up
+        $extractedFolder = Get-ChildItem -Path $installDir -Directory | Where-Object { $_.Name -like 'sqlite-tools-*' } | Select-Object -First 1
+        if ($extractedFolder) {
+            Get-ChildItem -Path $extractedFolder.FullName -File | ForEach-Object {
+                $destPath = Join-Path $installDir $_.Name
+                if (Test-Path $destPath) { Remove-Item $destPath -Force }
+                Move-Item -Path $_.FullName -Destination $installDir -Force
+            }
+            Remove-Item -Path $extractedFolder.FullName -Recurse -Force
+        }
+
+        # Cleanup temp file
+        Remove-Item -Path $tempZip -Force -ErrorAction SilentlyContinue
+
+        # Verify installation
+        if (Test-Path $sqlite3Exe) {
+            Write-Host "    SQLite CLI installed successfully!" -ForegroundColor Green
+            Write-Host "    Location: $sqlite3Exe" -ForegroundColor DarkGray
+            Write-Verbose "SQLite version: $(& $sqlite3Exe -version)"
+            return $sqlite3Exe
+        }
+        else {
+            throw "Installation completed but sqlite3.exe not found at expected location."
+        }
+    }
+    catch {
+        Write-Warning "Failed to install SQLite CLI: $_"
+        Write-Warning "Please install manually from: https://sqlite.org/download.html"
+        Write-Warning "Download 'sqlite-tools-win-x64' and extract sqlite3.exe to: $installDir"
+        return $null
+    }
+}
+
 function Test-IsElevated {
     <#
     .SYNOPSIS
@@ -501,7 +646,8 @@ function Invoke-SQLiteQuery {
             Write-Warning "sqlite3 not found. Please install SQLite CLI tools."
             Write-Warning "  macOS: brew install sqlite"
             Write-Warning "  Linux: sudo apt install sqlite3"
-            Write-Warning "  Windows: Download from https://sqlite.org/download.html"
+            Write-Warning "  Windows: Run 'Get-AIUsageDiscovery -InstallSQLite' for automatic installation"
+            Write-Warning "           Or download manually from https://sqlite.org/download.html"
             return @()
         }
     }

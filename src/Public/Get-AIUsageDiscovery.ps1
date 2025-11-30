@@ -65,6 +65,10 @@ function Get-AIUsageDiscovery {
     .EXAMPLE
     Get-AIUsageDiscovery -AllUsers
     Scan all users on the system (requires admin/elevated permissions).
+
+    .EXAMPLE
+    Get-AIUsageDiscovery -InstallSQLite
+    Automatically download and install SQLite CLI tools on Windows, then run the scan.
     #>
     [CmdletBinding()]
     param(
@@ -85,8 +89,20 @@ function Get-AIUsageDiscovery {
         
         [string] $OutputPath = (Get-Location).Path,
         
-        [switch] $PassThru
+        [switch] $PassThru,
+
+        [Parameter(HelpMessage = "Automatically download and install SQLite CLI tools on Windows")]
+        [switch] $InstallSQLite
     )
+
+    # Handle SQLite installation if requested
+    if ($InstallSQLite) {
+        $sqlitePath = Install-SQLiteCLI
+        if (-not $sqlitePath) {
+            Write-Warning "SQLite installation failed. The scan may not work without SQLite."
+        }
+        Write-Host ""
+    }
 
     # Determine which browsers to scan (default: all browsers)
     $browsersToScan = @()

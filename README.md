@@ -42,6 +42,16 @@ Install-Module -Name PeachSecurity.AIUsageDiscovery -Scope CurrentUser
 Get-AIUsageDiscovery
 ```
 
+### First time on Windows?
+
+If you see "sqlite3 not found", use the built-in installer:
+
+```powershell
+Get-AIUsageDiscovery -InstallSQLite
+```
+
+This automatically downloads SQLite CLI tools from the official sqlite.org website. Only needed once!
+
 ### Export reports for QBR
 
 ```powershell
@@ -153,6 +163,7 @@ Main scanning command with full output and export options.
 | `-ExportMarkdown` | Export results to Markdown |
 | `-OutputPath <path>` | Output directory for exports |
 | `-PassThru` | Return raw results object for pipeline |
+| `-InstallSQLite` | Auto-download and install SQLite CLI on Windows |
 
 ### Get-AIUsageSummary
 
