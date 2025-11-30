@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="images/peach-logo.png" alt="Peach Security" width="200"/>
+  <img src="images/peach-logo.png" alt="Peach Security" width="100"/>
 </p>
 
 <h1 align="center">PeachSecurity.AIUsageDiscovery</h1>
