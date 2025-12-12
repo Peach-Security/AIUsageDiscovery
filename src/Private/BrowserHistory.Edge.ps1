@@ -31,7 +31,7 @@ function Get-EdgeHistory {
     )
 
     Write-Verbose "Starting Edge history scan..."
-    $findings = @()
+    $findings = [System.Collections.Generic.List[PSCustomObject]]::new()
 
     # Get AI tool patterns
     $aiPatterns = Get-AIToolPatterns
@@ -90,7 +90,7 @@ ORDER BY last_visit_time DESC
                         }
                     }
 
-                    $findings += [PSCustomObject]@{
+                    $findings.Add([PSCustomObject]@{
                         Browser    = 'Edge'
                         Username   = $profile.Username
                         Profile    = $profile.ProfileName
@@ -100,7 +100,7 @@ ORDER BY last_visit_time DESC
                         Title      = $entry.title
                         VisitCount = [int]$entry.visit_count
                         Timestamp  = $timestamp
-                    }
+                    })
 
                     # Only match first pattern per URL
                     break

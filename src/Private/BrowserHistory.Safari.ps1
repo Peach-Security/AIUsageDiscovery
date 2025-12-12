@@ -30,11 +30,11 @@ function Get-SafariHistory {
     )
 
     Write-Verbose "Starting Safari history scan..."
-    $findings = @()
+    $findings = [System.Collections.Generic.List[PSCustomObject]]::new()
 
     # Safari is only available on macOS
-    $isMacOS = $PSVersionTable.PSVersion.Major -ge 6 -and $IsMacOS
-    if (-not $isMacOS) {
+    $runningOnMacOS = $PSVersionTable.PSVersion.Major -ge 6 -and $IsMacOS
+    if (-not $runningOnMacOS) {
         Write-Verbose "Safari is only available on macOS. Skipping."
         return $findings
     }
@@ -103,7 +103,7 @@ ORDER BY hv.visit_time DESC
                         }
                     }
 
-                    $findings += [PSCustomObject]@{
+                    $findings.Add([PSCustomObject]@{
                         Browser    = 'Safari'
                         Username   = $profile.Username
                         Profile    = $profile.ProfileName
@@ -113,7 +113,7 @@ ORDER BY hv.visit_time DESC
                         Title      = $entry.title
                         VisitCount = [int]$entry.visit_count
                         Timestamp  = $timestamp
-                    }
+                    })
 
                     # Only match first pattern per URL
                     break

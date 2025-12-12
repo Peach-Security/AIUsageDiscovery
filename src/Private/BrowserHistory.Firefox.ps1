@@ -31,7 +31,7 @@ function Get-FirefoxHistory {
     )
 
     Write-Verbose "Starting Firefox history scan..."
-    $findings = @()
+    $findings = [System.Collections.Generic.List[PSCustomObject]]::new()
 
     # Get AI tool patterns
     $aiPatterns = Get-AIToolPatterns
@@ -96,7 +96,7 @@ ORDER BY p.last_visit_date DESC
                         }
                     }
 
-                    $findings += [PSCustomObject]@{
+                    $findings.Add([PSCustomObject]@{
                         Browser    = 'Firefox'
                         Username   = $profile.Username
                         Profile    = $profile.ProfileName
@@ -106,7 +106,7 @@ ORDER BY p.last_visit_date DESC
                         Title      = $entry.title
                         VisitCount = [int]$entry.visit_count
                         Timestamp  = $timestamp
-                    }
+                    })
 
                     # Only match first pattern per URL
                     break

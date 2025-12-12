@@ -26,8 +26,8 @@ function Install-SQLiteCLI {
     )
 
     # Only supported on Windows
-    $isWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
-    if (-not $isWindows) {
+    $runningOnWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
+    if (-not $runningOnWindows) {
         Write-Warning "Automatic SQLite installation is only supported on Windows."
         Write-Warning "Please install SQLite manually:"
         Write-Warning "  macOS: brew install sqlite"
@@ -156,9 +156,9 @@ function Test-IsElevated {
     [CmdletBinding()]
     param()
 
-    $isWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
+    $runningOnWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
     
-    if ($isWindows) {
+    if ($runningOnWindows) {
         $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
         $principal = [Security.Principal.WindowsPrincipal]$identity
         return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -181,58 +181,58 @@ function Get-AllUserPaths {
     [CmdletBinding()]
     param()
 
-    $isWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
-    $isMacOS = $PSVersionTable.PSVersion.Major -ge 6 -and $IsMacOS
-    $isLinux = $PSVersionTable.PSVersion.Major -ge 6 -and $IsLinux
+    $runningOnWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
+    $runningOnMacOS = $PSVersionTable.PSVersion.Major -ge 6 -and $IsMacOS
+    $runningOnLinux = $PSVersionTable.PSVersion.Major -ge 6 -and $IsLinux
 
-    $userPaths = @()
+    $userPaths = [System.Collections.Generic.List[hashtable]]::new()
 
-    if ($isWindows) {
+    if ($runningOnWindows) {
         $usersRoot = "$env:SystemDrive\Users"
         $excludedDirs = @('Public', 'Default', 'Default User', 'All Users')
         
         Get-ChildItem -Path $usersRoot -Directory -ErrorAction SilentlyContinue | 
             Where-Object { $_.Name -notin $excludedDirs -and -not $_.Name.EndsWith('.') } |
             ForEach-Object {
-                $userPaths += @{
+                $userPaths.Add(@{
                     Username = $_.Name
                     HomePath = $_.FullName
                     LocalAppData = Join-Path $_.FullName 'AppData\Local'
                     RoamingAppData = Join-Path $_.FullName 'AppData\Roaming'
-                }
+                })
             }
     }
-    elseif ($isMacOS) {
+    elseif ($runningOnMacOS) {
         $usersRoot = '/Users'
         $excludedDirs = @('Shared', 'Guest')
         
         Get-ChildItem -Path $usersRoot -Directory -ErrorAction SilentlyContinue |
             Where-Object { $_.Name -notin $excludedDirs -and -not $_.Name.StartsWith('.') } |
             ForEach-Object {
-                $userPaths += @{
+                $userPaths.Add(@{
                     Username = $_.Name
                     HomePath = $_.FullName
-                }
+                })
             }
     }
-    elseif ($isLinux) {
+    elseif ($runningOnLinux) {
         $usersRoot = '/home'
         
         Get-ChildItem -Path $usersRoot -Directory -ErrorAction SilentlyContinue |
             Where-Object { -not $_.Name.StartsWith('.') } |
             ForEach-Object {
-                $userPaths += @{
+                $userPaths.Add(@{
                     Username = $_.Name
                     HomePath = $_.FullName
-                }
+                })
             }
         
         # Also check /root for root user
         if (Test-Path '/root') {
-            $userPaths += @{
+            $userPaths.Add(@{
                 Username = 'root'
                 HomePath = '/root'
-            }
+            })
         }
     }
 
@@ -375,10 +375,10 @@ function Get-BrowserProfilePaths {
         [switch] $AllUsers
     )
 
-    $paths = @()
-    $isWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
-    $isMacOS = $PSVersionTable.PSVersion.Major -ge 6 -and $IsMacOS
-    $isLinux = $PSVersionTable.PSVersion.Major -ge 6 -and $IsLinux
+    $paths = [System.Collections.Generic.List[hashtable]]::new()
+    $runningOnWindows = $PSVersionTable.PSVersion.Major -ge 6 -and $IsWindows -or $PSVersionTable.PSVersion.Major -lt 6
+    $runningOnMacOS = $PSVersionTable.PSVersion.Major -ge 6 -and $IsMacOS
+    $runningOnLinux = $PSVersionTable.PSVersion.Major -ge 6 -and $IsLinux
 
     # Determine which users to scan
     if ($AllUsers) {
@@ -387,13 +387,13 @@ function Get-BrowserProfilePaths {
     }
     else {
         # Current user only
-        $currentUsername = if ($isWindows) { $env:USERNAME } else { $env:USER }
+        $currentUsername = if ($runningOnWindows) { $env:USERNAME } else { $env:USER }
         $userContexts = @(
             @{
                 Username = $currentUsername
-                HomePath = if ($isWindows) { "$env:USERPROFILE" } else { $HOME }
-                LocalAppData = if ($isWindows) { $env:LOCALAPPDATA } else { $null }
-                RoamingAppData = if ($isWindows) { $env:APPDATA } else { $null }
+                HomePath = if ($runningOnWindows) { "$env:USERPROFILE" } else { $HOME }
+                LocalAppData = if ($runningOnWindows) { $env:LOCALAPPDATA } else { $null }
+                RoamingAppData = if ($runningOnWindows) { $env:APPDATA } else { $null }
             }
         )
     }
@@ -404,13 +404,13 @@ function Get-BrowserProfilePaths {
 
         switch ($Browser) {
             'Chrome' {
-                if ($isWindows) {
+                if ($runningOnWindows) {
                     $basePath = Join-Path $userCtx.LocalAppData 'Google\Chrome\User Data'
                 }
-                elseif ($isMacOS) {
+                elseif ($runningOnMacOS) {
                     $basePath = Join-Path $homePath 'Library/Application Support/Google/Chrome'
                 }
-                elseif ($isLinux) {
+                elseif ($runningOnLinux) {
                     $basePath = Join-Path $homePath '.config/google-chrome'
                 }
                 else {
@@ -426,11 +426,11 @@ function Get-BrowserProfilePaths {
                         foreach ($profile in $profiles) {
                             $historyPath = Join-Path $basePath "$profile/History"
                             if (Test-Path $historyPath -ErrorAction SilentlyContinue) {
-                                $paths += @{
+                                $paths.Add(@{
                                     Username    = $username
                                     ProfileName = $profile
                                     HistoryPath = $historyPath
-                                }
+                                })
                             }
                         }
                     }
@@ -441,13 +441,13 @@ function Get-BrowserProfilePaths {
             }
 
             'Edge' {
-                if ($isWindows) {
+                if ($runningOnWindows) {
                     $basePath = Join-Path $userCtx.LocalAppData 'Microsoft\Edge\User Data'
                 }
-                elseif ($isMacOS) {
+                elseif ($runningOnMacOS) {
                     $basePath = Join-Path $homePath 'Library/Application Support/Microsoft Edge'
                 }
-                elseif ($isLinux) {
+                elseif ($runningOnLinux) {
                     $basePath = Join-Path $homePath '.config/microsoft-edge'
                 }
                 else {
@@ -461,11 +461,11 @@ function Get-BrowserProfilePaths {
                         foreach ($profile in $profiles) {
                             $historyPath = Join-Path $basePath "$profile/History"
                             if (Test-Path $historyPath -ErrorAction SilentlyContinue) {
-                                $paths += @{
+                                $paths.Add(@{
                                     Username    = $username
                                     ProfileName = $profile
                                     HistoryPath = $historyPath
-                                }
+                                })
                             }
                         }
                     }
@@ -476,13 +476,13 @@ function Get-BrowserProfilePaths {
             }
 
             'Firefox' {
-                if ($isWindows) {
+                if ($runningOnWindows) {
                     $basePath = Join-Path $userCtx.RoamingAppData 'Mozilla\Firefox\Profiles'
                 }
-                elseif ($isMacOS) {
+                elseif ($runningOnMacOS) {
                     $basePath = Join-Path $homePath 'Library/Application Support/Firefox/Profiles'
                 }
-                elseif ($isLinux) {
+                elseif ($runningOnLinux) {
                     $basePath = Join-Path $homePath '.mozilla/firefox'
                 }
                 else {
@@ -497,11 +497,11 @@ function Get-BrowserProfilePaths {
                         foreach ($profileDir in $profileDirs) {
                             $placesPath = Join-Path $profileDir.FullName 'places.sqlite'
                             if (Test-Path $placesPath -ErrorAction SilentlyContinue) {
-                                $paths += @{
+                                $paths.Add(@{
                                     Username    = $username
                                     ProfileName = $profileDir.Name
                                     HistoryPath = $placesPath
-                                }
+                                })
                             }
                         }
                     }
@@ -513,7 +513,7 @@ function Get-BrowserProfilePaths {
 
             'Safari' {
                 # Safari is only available on macOS
-                if (-not $isMacOS) {
+                if (-not $runningOnMacOS) {
                     Write-Verbose "Safari is only available on macOS"
                     continue
                 }
@@ -532,11 +532,11 @@ function Get-BrowserProfilePaths {
                 }
 
                 if (Test-Path $historyPath) {
-                    $paths += @{
+                    $paths.Add(@{
                         Username    = $username
                         ProfileName = 'Default'
                         HistoryPath = $historyPath
-                    }
+                    })
                 }
             }
         }
@@ -629,7 +629,7 @@ function Invoke-SQLiteQuery {
             }
 
             $headers = $lines[0] -split '\|'
-            $objects = @()
+            $objects = [System.Collections.Generic.List[PSCustomObject]]::new()
 
             for ($i = 1; $i -lt $lines.Count; $i++) {
                 $values = $lines[$i] -split '\|'
@@ -637,7 +637,7 @@ function Invoke-SQLiteQuery {
                 for ($j = 0; $j -lt $headers.Count; $j++) {
                     $obj[$headers[$j].Trim()] = if ($j -lt $values.Count) { $values[$j].Trim() } else { '' }
                 }
-                $objects += [PSCustomObject]$obj
+                $objects.Add([PSCustomObject]$obj)
             }
 
             return $objects
@@ -773,20 +773,13 @@ function Convert-ToReportFormat {
 
     switch ($Format) {
         'JSON' {
-            $jsonObject = @{
-                machine    = $ScanResults.Machine
-                scanTime   = $ScanResults.ScanTime.ToString('o')
-                browsers   = @()
-            }
+            $browsersList = [System.Collections.Generic.List[hashtable]]::new()
 
             foreach ($browser in $ScanResults.Browsers.Keys) {
-                $browserData = @{
-                    name     = $browser
-                    findings = @()
-                }
+                $findingsList = [System.Collections.Generic.List[hashtable]]::new()
 
                 foreach ($finding in $ScanResults.Browsers[$browser]) {
-                    $browserData.findings += @{
+                    $findingsList.Add(@{
                         url       = $finding.Url
                         title     = $finding.Title
                         tool      = $finding.Tool
@@ -794,20 +787,29 @@ function Convert-ToReportFormat {
                         timestamp = if ($finding.Timestamp) { $finding.Timestamp.ToString('o') } else { $null }
                         username  = $finding.Username
                         profile   = $finding.Profile
-                    }
+                    })
                 }
 
-                $jsonObject.browsers += $browserData
+                $browsersList.Add(@{
+                    name     = $browser
+                    findings = $findingsList
+                })
+            }
+
+            $jsonObject = @{
+                machine    = $ScanResults.Machine
+                scanTime   = $ScanResults.ScanTime.ToString('o')
+                browsers   = $browsersList
             }
 
             $output = $jsonObject | ConvertTo-Json -Depth 10
         }
 
         'CSV' {
-            $csvData = @()
+            $csvData = [System.Collections.Generic.List[PSCustomObject]]::new()
             foreach ($browser in $ScanResults.Browsers.Keys) {
                 foreach ($finding in $ScanResults.Browsers[$browser]) {
-                    $csvData += [PSCustomObject]@{
+                    $csvData.Add([PSCustomObject]@{
                         Machine   = $ScanResults.Machine
                         ScanTime  = $ScanResults.ScanTime.ToString('o')
                         Username  = $finding.Username
@@ -818,7 +820,7 @@ function Convert-ToReportFormat {
                         Url       = $finding.Url
                         Title     = $finding.Title
                         Timestamp = if ($finding.Timestamp) { $finding.Timestamp.ToString('o') } else { '' }
-                    }
+                    })
                 }
             }
 
