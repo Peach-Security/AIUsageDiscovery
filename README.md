@@ -257,7 +257,7 @@ This tool helps MSPs with **shadow AI detection**, **employee AI usage discovery
 This module is part of **Free Tools Friday**, a weekly release series for MSPs by Peach Security.
 
 <p align="center">
-  <a href="https://github.com/Peach-Security/free-tools-friday">📦 Full Tool Catalog</a> •
+  <a href="https://github.com/Peach-Security/FreeToolsFriday">📦 Full Tool Catalog</a> •
   <a href="https://peachsecurity.io">🍑 Learn More</a> •
   <a href="https://www.peachsecurity.io/#waitlist">📋 Join the Waitlist</a>
 </p>
@@ -269,7 +269,7 @@ This module is part of **Free Tools Friday**, a weekly release series for MSPs b
 **Need real-time AI monitoring, AI DLP, tenant-wide reporting, and automated insights?**
 
 <p align="center">
-  <a href="https://peachsecurity.io/free-tools-friday">
+  <a href="https://www.peachsecurity.io/ftf">
     <img src="https://img.shields.io/badge/Try%20Peach%20Security-MSP%20AI%20Platform-ff6b6b?style=for-the-badge" alt="Try Peach Security">
   </a>
 </p>
