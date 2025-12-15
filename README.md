@@ -280,7 +280,7 @@ Peach Security provides enterprise-grade AI visibility and control for MSPs:
 - 🛡️ AI DLP policy enforcement
 - 📈 Automated compliance reports
 
-👉 **[peachsecurity.io/free-tools-friday](https://peachsecurity.io/free-tools-friday)**
+👉 **[peachsecurity.io/ftf](https://www.peachsecurity.io/ftf)**
 
 ---
 
